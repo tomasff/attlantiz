@@ -13,13 +13,9 @@ public class DiskStoreTests {
     @TempDir
     private Path temporaryStoreDir;
 
-    private DiskStore buildDiskStore() {
-        return new DiskStore(temporaryStoreDir.resolve("store.attz"));
-    }
-
     @Test
     public void putAndGet() {
-        DiskStore store = buildDiskStore();
+        DiskStore store = new DiskStore(temporaryStoreDir);
 
         store.put("key", "value");
 
@@ -30,7 +26,7 @@ public class DiskStoreTests {
 
     @Test
     public void putAndGetMultiple() {
-        DiskStore store = buildDiskStore();
+        DiskStore store = new DiskStore(temporaryStoreDir);
 
         for (int i = 0; i < 1000; i++) {
             store.put("key" + i, "value" + i);
@@ -45,7 +41,7 @@ public class DiskStoreTests {
 
     @Test
     public void getNonexistentKeyValue() {
-        DiskStore store = buildDiskStore();
+        DiskStore store = new DiskStore(temporaryStoreDir);
 
         assertEquals(Optional.empty(), store.get("key"));
         store.close();
@@ -53,7 +49,7 @@ public class DiskStoreTests {
 
     @Test
     public void putAndGetAndRemove() {
-        DiskStore store = buildDiskStore();
+        DiskStore store = new DiskStore(temporaryStoreDir);
 
         store.put("key", "value");
 
@@ -66,7 +62,7 @@ public class DiskStoreTests {
 
     @Test
     public void putAndGetAndRemoveMultiple() {
-        DiskStore store = buildDiskStore();
+        DiskStore store = new DiskStore(temporaryStoreDir);
 
         for (int i = 0; i < 1000; i++) {
             store.put("key" + i, "value" + i);
@@ -83,14 +79,14 @@ public class DiskStoreTests {
 
     @Test
     public void putIsPersistent() {
-        DiskStore store = buildDiskStore();
+        DiskStore store = new DiskStore(temporaryStoreDir);
 
         store.put("key", "value");
         assertEquals(Optional.of("value"), store.get("key"));
 
         store.close();
 
-        store = buildDiskStore();
+        store = new DiskStore(temporaryStoreDir);
         assertEquals(Optional.of("value"), store.get("key"));
 
         store.close();
@@ -98,21 +94,21 @@ public class DiskStoreTests {
 
     @Test
     public void putAndRemoveIsPersistent() {
-        DiskStore store = buildDiskStore();
+        DiskStore store = new DiskStore(temporaryStoreDir);
 
         store.put("key", "value");
         assertEquals(Optional.of("value"), store.get("key"));
 
         store.close();
 
-        store = buildDiskStore();
+        store = new DiskStore(temporaryStoreDir);
         assertEquals(Optional.of("value"), store.get("key"));
         assertEquals(Optional.of("value"), store.remove("key"));
         assertEquals(Optional.empty(), store.get("key"));
 
         store.close();
 
-        store = buildDiskStore();
+        store = new DiskStore(temporaryStoreDir);
         assertEquals(Optional.empty(), store.get("key"));
         assertEquals(Optional.empty(), store.remove("key"));
 
