@@ -2,6 +2,10 @@ package com.tomff.attlantiz;
 
 import java.util.Optional;
 
+/**
+ * An Attlantiz <a href="https://riak.com/assets/bitcask-intro.pdf">Bitcask</a>-based
+ * embedded key-value store with no duplicates.
+ */
 public interface Store {
 
     /**
@@ -10,7 +14,7 @@ public interface Store {
      * @param key   Name of the key
      * @param value Value to be associated with the key
      */
-    public void put(String key, String value);
+    void put(String key, String value);
 
     /**
      * Retrieve value associate with the key in the store.
@@ -19,12 +23,22 @@ public interface Store {
      * @return If the key is present in the store, returns an {@link Optional}
      *         describing the value, otherwise an empty {@link Optional}.
      */
-    public Optional<String> get(String key);
+    Optional<String> get(String key);
+
+    /**
+     * Removes key-value pair from the store if present.
+     *
+     * @param key Name of the key whose key-value pair is to be removed.
+     * @return If the key is present in the store, returns an {@link Optional}
+     *         describing the value which was associated with the key,
+     *         otherwise, in the case where the key did not exist, an empty {@link Optional}.
+     */
+    Optional<String> remove(String key);
 
     /**
      * Close the store and flush all pending writes.
      *
      */
-    public void close();
+    void close();
 
 }
