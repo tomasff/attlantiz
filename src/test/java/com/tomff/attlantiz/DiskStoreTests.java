@@ -3,6 +3,7 @@ package com.tomff.attlantiz;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -14,7 +15,7 @@ public class DiskStoreTests {
     private Path temporaryStoreDir;
 
     @Test
-    public void putAndGet() {
+    public void putAndGet() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         store.put("key", "value");
@@ -23,9 +24,8 @@ public class DiskStoreTests {
         store.close();
     }
 
-
     @Test
-    public void putAndGetMultiple() {
+    public void putAndGetMultiple() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         for (int i = 0; i < 1000; i++) {
@@ -40,7 +40,7 @@ public class DiskStoreTests {
     }
 
     @Test
-    public void getNonexistentKeyValue() {
+    public void getNonexistentKeyValue() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         assertEquals(Optional.empty(), store.get("key"));
@@ -48,7 +48,7 @@ public class DiskStoreTests {
     }
 
     @Test
-    public void putAndGetAndRemove() {
+    public void putAndGetAndRemove() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         store.put("key", "value");
@@ -61,7 +61,7 @@ public class DiskStoreTests {
     }
 
     @Test
-    public void putAndGetAndRemoveMultiple() {
+    public void putAndGetAndRemoveMultiple() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         for (int i = 0; i < 1000; i++) {
@@ -78,7 +78,7 @@ public class DiskStoreTests {
     }
 
     @Test
-    public void putIsPersistent() {
+    public void putIsPersistent() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         store.put("key", "value");
@@ -93,7 +93,7 @@ public class DiskStoreTests {
     }
 
     @Test
-    public void putAndRemoveIsPersistent() {
+    public void putAndRemoveIsPersistent() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         store.put("key", "value");
