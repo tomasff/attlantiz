@@ -11,9 +11,12 @@ import java.util.Optional;
 
 public record KeyValueHeader(Instant writtenOn, int keySize, int valueSize) {
 
-    public static final int HEADER_SIZE = 8 // Timestamp (long - 8 bytes)
-            + 4                              // Key size (4 bytes)
-            + 4;                             // Value size (4 bytes)
+    /**
+     * A header for a key-value pair includes a
+     * timestamp of when the record was created (8 bytes),
+     * the key size (4 bytes), and the value size (4 bytes)
+     */
+    public static final int HEADER_SIZE = 8 + 4 + 4;
 
     public KeyValueHeader {
         Objects.requireNonNull(writtenOn);
