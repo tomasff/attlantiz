@@ -9,14 +9,15 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
-public record KeyValueHeader(Instant writtenOn, int keySize, int valueSize) {
+public record KeyValueHeader(Instant writtenOn, boolean isTombstone, int keySize, int valueSize) {
 
     /**
      * A header for a key-value pair includes a
      * timestamp of when the record was created (8 bytes),
+     * whether this record is a tombstone (1 byte),
      * the key size (4 bytes), and the value size (4 bytes)
      */
-    public static final int HEADER_SIZE = 8 + 4 + 4;
+    public static final int HEADER_SIZE = 8 + 1 + 4 + 4;
 
     public KeyValueHeader {
         Objects.requireNonNull(writtenOn);
@@ -46,9 +47,10 @@ public record KeyValueHeader(Instant writtenOn, int keySize, int valueSize) {
         valueHeaderBytes.flip();
 
         Instant writtenOn = Instant.ofEpochMilli(valueHeaderBytes.getLong());
+        boolean isTombstone = valueHeaderBytes.get() == 1;
         int keySize = valueHeaderBytes.getInt();
         int valueSize = valueHeaderBytes.getInt();
 
-        return Optional.of(new KeyValueHeader(writtenOn, keySize, valueSize));
+        return Optional.of(new KeyValueHeader(writtenOn, isTombstone, keySize, valueSize));
     }
 }

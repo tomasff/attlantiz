@@ -56,8 +56,7 @@ public class DiskStore implements Store {
         Files.walkFileTree(storeDirectory, new KeyDirectoryFileVisitor(keyDiskLocations));
     }
 
-    @Override
-    public void put(String key, String value) {
+    public void put(String key, String value, boolean isTombstone) {
         DiskValueLocation valueLocation = keyDiskLocations.get(key);
 
         Instant now = Instant.now();
@@ -69,6 +68,7 @@ public class DiskStore implements Store {
         );
 
         keyValueBytes.putLong(now.toEpochMilli());
+        keyValueBytes.put((byte) (isTombstone ? 1 : 0));
         keyValueBytes.putInt(keyBytes.length);
         keyValueBytes.putInt(valueBytes.length);
         keyValueBytes.put(keyBytes);
@@ -94,6 +94,11 @@ public class DiskStore implements Store {
     }
 
     @Override
+    public void put(String key, String value) {
+        put(key, value, false);
+    }
+
+    @Override
     public Optional<String> get(String key) {
         DiskValueLocation location = keyDiskLocations.get(key);
 
@@ -110,6 +115,10 @@ public class DiskStore implements Store {
                 throw new InvalidKeyValueRecordException("Invalid KV header found");
             }
 
+            if (header.get().isTombstone()) {
+                return Optional.empty();
+            }
+
             diskKeyValue = KeyValue.load(fc, header.get());
         } catch (IOException e) {
             e.printStackTrace();
@@ -119,8 +128,12 @@ public class DiskStore implements Store {
     }
 
     @Override
-    public Optional<String> remove(String key) {
-        return Optional.empty();
+    public void remove(String key) {
+        if (!keyDiskLocations.containsKey(key)) {
+            return;
+        }
+
+        put(key, "", true);
     }
 
     @Override

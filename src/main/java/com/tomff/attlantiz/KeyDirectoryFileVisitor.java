@@ -33,26 +33,36 @@ public class KeyDirectoryFileVisitor extends SimpleFileVisitor<Path> {
         }
 
         try (FileChannel fc = FileChannel.open(file, READ)) {
-            Optional<KeyValueHeader> keyValueHeader = KeyValueHeader.load(fc);
+            Optional<KeyValueHeader> possibleKeyValueHeader = KeyValueHeader.load(fc);
 
-            while (keyValueHeader.isPresent()) {
-                KeyValueHeader kvHeader = keyValueHeader.get();
-                Optional<KeyValue> keyValue = KeyValue.load(fc, kvHeader);
+            while (possibleKeyValueHeader.isPresent()) {
+                KeyValueHeader keyValueHeader = possibleKeyValueHeader.get();
+                Optional<KeyValue> possibleKeyValue = KeyValue.load(fc, keyValueHeader);
 
-                if (keyValue.isEmpty()) {
+                if (possibleKeyValue.isEmpty()) {
                     break;
                 }
 
-                keyDirectory.put(keyValue.get().key(),
+                KeyValue keyValue = possibleKeyValue.get();
+
+                if (keyDirectory.containsKey(keyValue.key())) {
+                    DiskValueLocation existingKeyValueHeader = keyDirectory.get(keyValue.key());
+
+                    if (existingKeyValueHeader.writtenOn().isAfter(keyValueHeader.writtenOn())) {
+                        continue;
+                    }
+                }
+
+                keyDirectory.put(keyValue.key(),
                         new DiskValueLocation(
                                 file,
-                                fc.position() - kvHeader.totalSize(),
-                                kvHeader.writtenOn(),
-                                kvHeader.valueSize()
+                                fc.position() - keyValueHeader.totalSize(),
+                                keyValueHeader.writtenOn(),
+                                keyValueHeader.valueSize()
                         )
                 );
 
-                keyValueHeader = KeyValueHeader.load(fc);
+                possibleKeyValueHeader = KeyValueHeader.load(fc);
             }
         }
 

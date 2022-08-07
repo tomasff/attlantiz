@@ -29,11 +29,8 @@ public interface Store {
      * Removes key-value pair from the store if present.
      *
      * @param key Name of the key whose key-value pair is to be removed.
-     * @return If the key is present in the store, returns an {@link Optional}
-     *         describing the value which was associated with the key,
-     *         otherwise, in the case where the key did not exist, an empty {@link Optional}.
      */
-    Optional<String> remove(String key);
+    void remove(String key);
 
     /**
      * Close the store and flush all pending writes.

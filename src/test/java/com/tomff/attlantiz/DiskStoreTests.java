@@ -54,7 +54,8 @@ public class DiskStoreTests {
         store.put("key", "value");
 
         assertEquals(Optional.of("value"), store.get("key"));
-        assertEquals(Optional.of("value"), store.remove("key"));
+
+        store.remove("key");
         assertEquals(Optional.empty(), store.get("key"));
 
         store.close();
@@ -70,7 +71,7 @@ public class DiskStoreTests {
 
         for (int i = 0; i < 1000; i++) {
             assertEquals(Optional.of("value" + i), store.get("key" + i));
-            assertEquals(Optional.of("value" + i), store.remove("key" + i));
+            store.remove("key" + i);
             assertEquals(Optional.empty(), store.get("key" + i));
         }
 
@@ -103,14 +104,24 @@ public class DiskStoreTests {
 
         store = new DiskStore(temporaryStoreDir);
         assertEquals(Optional.of("value"), store.get("key"));
-        assertEquals(Optional.of("value"), store.remove("key"));
+        store.remove("key");
         assertEquals(Optional.empty(), store.get("key"));
 
         store.close();
 
         store = new DiskStore(temporaryStoreDir);
         assertEquals(Optional.empty(), store.get("key"));
-        assertEquals(Optional.empty(), store.remove("key"));
+
+        store.close();
+    }
+
+    @Test
+    public void removeDoesntAddRecord() throws IOException {
+        DiskStore store = new DiskStore(temporaryStoreDir);
+
+        assertEquals(Optional.empty(), store.get("key"));
+        store.remove("key");
+        assertEquals(Optional.empty(), store.get("key"));
 
         store.close();
     }
