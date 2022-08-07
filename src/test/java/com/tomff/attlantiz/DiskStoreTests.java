@@ -125,4 +125,21 @@ public class DiskStoreTests {
 
         store.close();
     }
+
+    @Test
+    public void putMultipleSameKey() throws IOException {
+        DiskStore store = new DiskStore(temporaryStoreDir);
+
+        store.put("key", "value");
+        store.put("key", "value1");
+        store.put("key", "value2");
+        store.put("key", "value3");
+
+        assertEquals(Optional.of("value3"), store.get("key"));
+
+        store.close();
+
+        store = new DiskStore(temporaryStoreDir);
+        assertEquals(Optional.of("value3"), store.get("key"));
+    }
 }
