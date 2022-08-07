@@ -56,7 +56,7 @@ public class DiskStore implements Store {
         Files.walkFileTree(storeDirectory, new KeyDirectoryFileVisitor(keyDiskLocations));
     }
 
-    public void put(String key, String value, boolean isTombstone) {
+    private void put(String key, String value, boolean isTombstone) {
         DiskValueLocation valueLocation = keyDiskLocations.get(key);
 
         Instant now = Instant.now();
