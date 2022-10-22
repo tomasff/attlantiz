@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -14,13 +15,21 @@ public class DiskStoreTests {
     @TempDir
     private Path temporaryStoreDir;
 
+    private ByteBuffer getIntByteBuffer(int num) {
+        return ByteBuffer.allocate(Integer.BYTES).putInt(num).flip();
+    }
+
     @Test
     public void putAndGet() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
-        store.put("key", "value");
+        ByteBuffer key = getIntByteBuffer(1);
+        ByteBuffer value = getIntByteBuffer(2);
 
-        assertEquals(Optional.of("value"), store.get("key"));
+        store.put(key, value);
+
+        assertEquals(Optional.of(value), store.get(key));
+
         store.close();
     }
 
@@ -29,11 +38,11 @@ public class DiskStoreTests {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         for (int i = 0; i < 1000; i++) {
-            store.put("key" + i, "value" + i);
+            store.put(getIntByteBuffer(i), getIntByteBuffer(i + 1));
         }
 
         for (int i = 0; i < 1000; i++) {
-            assertEquals(Optional.of("value" + i), store.get("key" + i));
+            assertEquals(Optional.of(getIntByteBuffer(i + 1)), store.get(getIntByteBuffer(i)));
         }
 
         store.close();
@@ -43,7 +52,7 @@ public class DiskStoreTests {
     public void getNonexistentKeyValue() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
-        assertEquals(Optional.empty(), store.get("key"));
+        assertEquals(Optional.empty(), store.get(getIntByteBuffer(1)));
         store.close();
     }
 
@@ -51,12 +60,15 @@ public class DiskStoreTests {
     public void putAndGetAndRemove() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
-        store.put("key", "value");
+        ByteBuffer key = getIntByteBuffer(1);
+        ByteBuffer value = getIntByteBuffer(2);
 
-        assertEquals(Optional.of("value"), store.get("key"));
+        store.put(key, value);
 
-        store.remove("key");
-        assertEquals(Optional.empty(), store.get("key"));
+        assertEquals(Optional.of(value), store.get(key));
+
+        store.remove(key);
+        assertEquals(Optional.empty(), store.get(key));
 
         store.close();
     }
@@ -66,13 +78,16 @@ public class DiskStoreTests {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
         for (int i = 0; i < 1000; i++) {
-            store.put("key" + i, "value" + i);
+            store.put(getIntByteBuffer(i), getIntByteBuffer(i + 1));
         }
 
         for (int i = 0; i < 1000; i++) {
-            assertEquals(Optional.of("value" + i), store.get("key" + i));
-            store.remove("key" + i);
-            assertEquals(Optional.empty(), store.get("key" + i));
+            ByteBuffer key = getIntByteBuffer(i);
+            ByteBuffer value = getIntByteBuffer(i + 1);
+
+            assertEquals(Optional.of(value), store.get(key));
+            store.remove(key);
+            assertEquals(Optional.empty(), store.get(key));
         }
 
         store.close();
@@ -82,13 +97,16 @@ public class DiskStoreTests {
     public void putIsPersistent() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
-        store.put("key", "value");
-        assertEquals(Optional.of("value"), store.get("key"));
+        ByteBuffer key = getIntByteBuffer(1);
+        ByteBuffer value = getIntByteBuffer(2);
+
+        store.put(key, value);
+        assertEquals(Optional.of(value), store.get(key));
 
         store.close();
 
         store = new DiskStore(temporaryStoreDir);
-        assertEquals(Optional.of("value"), store.get("key"));
+        assertEquals(Optional.of(value), store.get(key));
 
         store.close();
     }
@@ -97,20 +115,23 @@ public class DiskStoreTests {
     public void putAndRemoveIsPersistent() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
-        store.put("key", "value");
-        assertEquals(Optional.of("value"), store.get("key"));
+        ByteBuffer key = getIntByteBuffer(1);
+        ByteBuffer value = getIntByteBuffer(2);
+
+        store.put(key, value);
+        assertEquals(Optional.of(value), store.get(key));
 
         store.close();
 
         store = new DiskStore(temporaryStoreDir);
-        assertEquals(Optional.of("value"), store.get("key"));
-        store.remove("key");
-        assertEquals(Optional.empty(), store.get("key"));
+        assertEquals(Optional.of(value), store.get(key));
+        store.remove(key);
+        assertEquals(Optional.empty(), store.get(key));
 
         store.close();
 
         store = new DiskStore(temporaryStoreDir);
-        assertEquals(Optional.empty(), store.get("key"));
+        assertEquals(Optional.empty(), store.get(key));
 
         store.close();
     }
@@ -119,9 +140,11 @@ public class DiskStoreTests {
     public void removeDoesntAddRecord() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
-        assertEquals(Optional.empty(), store.get("key"));
-        store.remove("key");
-        assertEquals(Optional.empty(), store.get("key"));
+        ByteBuffer key = getIntByteBuffer(1);
+
+        assertEquals(Optional.empty(), store.get(key));
+        store.remove(key);
+        assertEquals(Optional.empty(), store.get(key));
 
         store.close();
     }
@@ -130,16 +153,18 @@ public class DiskStoreTests {
     public void putMultipleSameKey() throws IOException {
         DiskStore store = new DiskStore(temporaryStoreDir);
 
-        store.put("key", "value");
-        store.put("key", "value1");
-        store.put("key", "value2");
-        store.put("key", "value3");
+        ByteBuffer key = getIntByteBuffer(2022);
 
-        assertEquals(Optional.of("value3"), store.get("key"));
+        store.put(key, getIntByteBuffer(1));
+        store.put(key, getIntByteBuffer(2));
+        store.put(key, getIntByteBuffer(3));
+        store.put(key, getIntByteBuffer(4));
+
+        assertEquals(Optional.of(getIntByteBuffer(4)), store.get(key));
 
         store.close();
 
         store = new DiskStore(temporaryStoreDir);
-        assertEquals(Optional.of("value3"), store.get("key"));
+        assertEquals(Optional.of(getIntByteBuffer(4)), store.get(key));
     }
 }

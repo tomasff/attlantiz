@@ -1,6 +1,7 @@
 package com.tomff.attlantiz;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
@@ -15,12 +16,14 @@ import static java.nio.file.StandardOpenOption.READ;
 
 public class KeyDirectoryFileVisitor extends SimpleFileVisitor<Path> {
 
-    private final Map<String, DiskValueLocation> keyDirectory;
+    private final KeyDirectory keyDirectory;
 
-    public KeyDirectoryFileVisitor(Map<String, DiskValueLocation> keyDirectory) {
+    public KeyDirectoryFileVisitor(KeyDirectory keyDirectory) {
         Objects.requireNonNull(keyDirectory);
 
         this.keyDirectory = keyDirectory;
+
+        System.out.println("Loading!");
     }
 
     @Override
@@ -44,6 +47,8 @@ public class KeyDirectoryFileVisitor extends SimpleFileVisitor<Path> {
                 }
 
                 KeyValue keyValue = possibleKeyValue.get();
+
+                System.out.println("loading key: " + keyValue.key());
 
                 if (keyDirectory.containsKey(keyValue.key())) {
                     DiskValueLocation existingKeyValueHeader = keyDirectory.get(keyValue.key());

@@ -5,7 +5,6 @@ import com.tomff.attlantiz.exceptions.InvalidKeyValueRecordException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -22,7 +21,7 @@ public class DiskStore implements Store {
     private Path activeFile;
     private FileChannel activeFileChannel;
 
-    private Map<String, DiskValueLocation> keyDiskLocations;
+    private KeyDirectory keyDirectory;
 
     private int fileBytesSizeThreshold;
 
@@ -36,7 +35,7 @@ public class DiskStore implements Store {
                 "The directory path for an Attlantiz DiskStore must not be null."
         );
 
-        keyDiskLocations = new HashMap<>();
+        keyDirectory = new KeyDirectory();
 
         this.fileBytesSizeThreshold = fileBytesSizeThreshold;
 
@@ -53,34 +52,36 @@ public class DiskStore implements Store {
     }
 
     private void loadExistingFiles() throws IOException {
-        Files.walkFileTree(storeDirectory, new KeyDirectoryFileVisitor(keyDiskLocations));
+        Files.walkFileTree(storeDirectory, new KeyDirectoryFileVisitor(keyDirectory));
     }
 
-    private void put(String key, String value, boolean isTombstone) {
-        DiskValueLocation valueLocation = keyDiskLocations.get(key);
+    private void put(ByteBuffer key, ByteBuffer value, boolean isTombstone) {
+        DiskValueLocation valueLocation = keyDirectory.get(key);
 
         Instant now = Instant.now();
-        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-        byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer keyValueBytes = ByteBuffer.allocate(
-                KeyValueHeader.HEADER_SIZE + keyBytes.length + valueBytes.length
+                KeyValueHeader.HEADER_SIZE + key.capacity() + value.capacity()
         );
 
         keyValueBytes.putLong(now.toEpochMilli());
         keyValueBytes.put((byte) (isTombstone ? 1 : 0));
-        keyValueBytes.putInt(keyBytes.length);
-        keyValueBytes.putInt(valueBytes.length);
-        keyValueBytes.put(keyBytes);
-        keyValueBytes.put(valueBytes);
+        keyValueBytes.putInt(key.capacity());
+        keyValueBytes.putInt(value.capacity());
+        keyValueBytes.put(key);
+        keyValueBytes.put(value);
 
         keyValueBytes.flip();
+
+        // Restore the position of the key and value buffers
+        key.flip();
+        value.flip();
 
         try {
             valueLocation = new DiskValueLocation(activeFile,
                     activeFileChannel.position(),
                     now,
-                    valueBytes.length
+                    value.capacity()
             );
 
             while (keyValueBytes.hasRemaining()) {
@@ -90,17 +91,17 @@ public class DiskStore implements Store {
             e.printStackTrace();
         }
 
-        keyDiskLocations.put(key, valueLocation);
+        keyDirectory.put(key, valueLocation);
     }
 
     @Override
-    public void put(String key, String value) {
+    public void put(ByteBuffer key, ByteBuffer value) {
         put(key, value, false);
     }
 
     @Override
-    public Optional<String> get(String key) {
-        DiskValueLocation location = keyDiskLocations.get(key);
+    public Optional<ByteBuffer> get(ByteBuffer key) {
+        DiskValueLocation location = keyDirectory.get(key);
 
         if (location == null) {
             return Optional.empty();
@@ -128,12 +129,12 @@ public class DiskStore implements Store {
     }
 
     @Override
-    public void remove(String key) {
-        if (!keyDiskLocations.containsKey(key)) {
+    public void remove(ByteBuffer key) {
+        if (!keyDirectory.containsKey(key)) {
             return;
         }
 
-        put(key, "", true);
+        put(key, ByteBuffer.allocate(0).flip(), true);
     }
 
     @Override
